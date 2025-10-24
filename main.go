@@ -36,9 +36,20 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if update.Message != nil {
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет, я живой 🚀")
-		bot.Send(msg)
+	// Проверяем, пришло ли сообщение из WebApp
+	if update.Message != nil && update.Message.WebAppData != nil && update.Message.WebAppData.Data != "" {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(update.Message.WebAppData.Data), &data); err != nil {
+			log.Println("Ошибка при чтении данных из WebApp:", err)
+			return
+		}
+
+		log.Printf("📦 Получены данные из WebApp: %+v\n", data)
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "✅ Данные успешно получены!")
+		if _, err := bot.Send(msg); err != nil {
+			log.Println("Ошибка при отправке ответа:", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
